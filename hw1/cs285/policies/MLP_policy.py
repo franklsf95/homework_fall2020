@@ -94,6 +94,7 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
 
         policy_acs = self(obs)
         loss = self.loss(policy_acs, truth_acs)
+        print(loss)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
