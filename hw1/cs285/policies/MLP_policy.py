@@ -91,10 +91,8 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
     def update(self, observations, actions, **kwargs):
         obs = ptu.from_numpy(observations.astype(np.float32))
         truth_acs = ptu.from_numpy(actions.astype(np.float32))
-
         policy_acs = self(obs)
         loss = self.loss(policy_acs, truth_acs)
-        print(loss)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -110,7 +108,8 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
             return self.logits_na(observation)
 
         mean = self.mean_net(observation)
-        sample = torch.normal(mean=mean, std=torch.exp(self.logstd))
+        dist = distributions.Normal(mean, torch.exp(self.logstd))
+        sample = dist.rsample()
         return sample
 
 
