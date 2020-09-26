@@ -123,11 +123,11 @@ class PGAgent(BaseAgent):
         Input: list of rewards {r_0, r_1, ..., r_t', ... r_T} from a single rollout of length T
         Output: list where each index t contains sum_{t'=0}^T gamma^t' r_{t'}
         """
-        n = rewards.shape[0]
-        discount_factors = np.power(self.gamma, np.arange(n))
+        T = rewards.shape[0]
+        discount_factors = np.power(self.gamma, np.arange(T))
         discounted_rewards = rewards * discount_factors
         ret = np.sum(discounted_rewards)
-        return np.repeat(ret, n)
+        return np.repeat(ret, T)
 
     def _discounted_cumsum(self, rewards):
         """
@@ -135,11 +135,15 @@ class PGAgent(BaseAgent):
         - takes a list of rewards {r_0, r_1, ..., r_t', ... r_T},
         - and returns a list where the entry in each index t' is sum_{t'=t}^T gamma^(t'-t) * r_{t'}
         """
-
-        # TODO: create `list_of_discounted_returns`
         # HINT1: note that each entry of the output should now be unique,
         # because the summation happens over [t, T] instead of [0, T]
         # HINT2: it is possible to write a vectorized solution, but a solution
         # using a for loop is also fine
+        T = rewards.shape[0]
+        discount_factors = np.power(self.gamma, np.arange(T))
+        discounted_rewards = rewards * discount_factors
 
-        return list_of_discounted_cumsums
+        # We can write RTG(t) = sum_{t'=t}^T gamma^t' r_{t'} / r^t
+        partial_sums = np.flip(np.cumsum(discounted_rewards))
+        rewards_to_go = partial_sums / discount_factors
+        return rewards_to_go
