@@ -81,9 +81,8 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
         else:
             observation = obs[None]
         observation = ptu.from_numpy(observation.astype(np.float32))
-        action = self(observation)
-
-        # return the action that the policy prescribes
+        action_dist = self(observation)
+        action = action_dist.sample()
         return ptu.to_numpy(action)
 
     # update/train this policy
@@ -104,12 +103,13 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
     # `torch.distributions.Distribution` object. It's up to you!
     def forward(self, observation: torch.FloatTensor):
         if self.discrete:
-            return self.logits_na(observation)
+            logits = self.logits_na(observation)
+            dist = distributions.Categorical(logits=logits)
+            return dist
 
         mean = self.mean_net(observation)
         dist = distributions.Normal(mean, torch.exp(self.logstd))
-        sample = dist.rsample()
-        return sample
+        return dist
 
 
 #####################################################
@@ -127,7 +127,7 @@ class MLPPolicyPG(MLPPolicy):
         actions = ptu.from_numpy(actions)
         advantages = ptu.from_numpy(advantages)
 
-        # TODO: compute the loss that should be optimized when training with policy gradient
+        # compute the loss that should be optimized when training with policy gradient
         # HINT1: Recall that the expression that we want to MAXIMIZE
         # is the expectation over collected trajectories of:
         # sum_{t=0}^{T-1} [grad [log pi(a_t|s_t) * (Q_t - b_t)]]
