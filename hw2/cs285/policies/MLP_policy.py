@@ -135,11 +135,15 @@ class MLPPolicyPG(MLPPolicy):
         # by the `forward` method
         # HINT3: don't forget that `optimizer.step()` MINIMIZES a loss
 
-        loss = TODO
+        action_dists = self(observations)
+        log_probs = action_dists.log_prob(actions)
+        loss = -torch.sum(log_probs * advantages)
 
-        # TODO: optimize `loss` using `self.optimizer`
+        # optimize `loss` using `self.optimizer`
         # HINT: remember to `zero_grad` first
-        TODO
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
         if self.nn_baseline:
             ## TODO: normalize the q_values to have a mean of zero and a standard deviation of one
