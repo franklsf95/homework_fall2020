@@ -237,17 +237,18 @@ def sample_trajectories_sequential(
 
 
 import os
-import ray
+import torch.multiprocessing as mp
 
 
-@ray.remote
-def sample_trajectory_remote(
-    env, serialized_policy, max_path_length, render, render_mode
+def mp_worker(
+    result_queue, env, serialized_policy, max_path_length, render, render_mode
 ):
     ptu.init_gpu(use_gpu=False)
     cls = serialized_policy["__class__"]
     policy = cls.deserialize(serialized_policy)
-    return sample_trajectory(env, policy, max_path_length, render, render_mode)
+    while True:
+        result = sample_trajectory(env, policy, max_path_length, render, render_mode)
+        result_queue.put(result)
 
 
 def sample_trajectories_parallel(
@@ -259,34 +260,39 @@ def sample_trajectories_parallel(
     render_mode=("rgb_array"),
 ):
     """Collect rollouts until we have collected min_timesteps_per_batch steps."""
-    if not ray.is_initialized():
-        ray.init()
-
     serialized_policy = policy.serialize()
 
-    def launch_task():
-        return sample_trajectory_remote.remote(
-            env, serialized_policy, max_path_length, render, render_mode
+    ctx = mp.get_context("spawn")
+
+    def launch_worker():
+        proc = ctx.Process(
+            target=mp_worker,
+            args=(
+                result_queue,
+                env,
+                serialized_policy,
+                max_path_length,
+                render,
+                render_mode,
+            ),
         )
+        proc.start()
+        return proc
 
     timesteps_this_batch = 0
     paths = []
 
-    parallelism = os.cpu_count()
-    tasks = [launch_task() for _ in range(parallelism)]
+    result_queue = ctx.Queue(1)
+    processes = [launch_worker() for _ in range(os.cpu_count())]
     while True:
-        ready, not_ready = ray.wait(tasks)
-        for task in ready:
-            path = ray.get(task)
-            paths.append(path)
-            timesteps_this_batch += get_pathlength(path)
+        path = result_queue.get()
+        paths.append(path)
+        timesteps_this_batch += get_pathlength(path)
         if timesteps_this_batch >= min_timesteps_per_batch:
-            # We have collected enough. Cancel the ongoing tasks.
-            for t in tasks:
-                ray.cancel(t, force=True)
+            # We have collected enough. Kill the workers.
+            result_queue.close()
+            for proc in processes:
+                proc.kill()
             break
-        # Otherwise, collect some more.
-        new_tasks = [launch_task() for _ in ready]
-        tasks = not_ready + new_tasks
 
     return paths, timesteps_this_batch
