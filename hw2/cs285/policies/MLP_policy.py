@@ -73,6 +73,41 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
     def save(self, filepath):
         torch.save(self.state_dict(), filepath)
 
+    def serialize(self):
+        """
+        Returns a dict with everything needed to reconstruct this policy.
+        Used for CPU multiprocessing.
+        """
+        state_dict = self.state_dict()
+        state_dict_cpu = {k: v.cpu() for k, v in state_dict.items()}
+        return {
+            "__class__": self.__class__,
+            "ac_dim": self.ac_dim,
+            "ob_dim": self.ob_dim,
+            "n_layers": self.n_layers,
+            "size": self.size,
+            "discrete": self.discrete,
+            "learning_rate": self.learning_rate,
+            "training": self.training,
+            "nn_baseline": self.nn_baseline,
+            "__state_dict__": state_dict_cpu,
+        }
+
+    @classmethod
+    def deserialize(cls, state):
+        ret = cls(
+            state["ac_dim"],
+            state["ob_dim"],
+            state["n_layers"],
+            state["size"],
+            discrete=state["discrete"],
+            learning_rate=state["learning_rate"],
+            training=state["training"],
+            nn_baseline=state["nn_baseline"],
+        )
+        ret.load_state_dict(state["__state_dict__"])
+        return ret
+
     ##################################
 
     def get_action(self, obs: np.ndarray) -> np.ndarray:
