@@ -212,7 +212,7 @@ def add_noise(data_inp, noiseToSignal=0.01):
 
 
 def sample_trajectories(*args, **kwargs):
-    return sample_trajectories_parallel(*args, **kwargs)
+    return sample_trajectories_sequential(*args, **kwargs)
 
 
 def sample_trajectories_sequential(
