@@ -9,6 +9,7 @@ import torch
 from torch import distributions
 
 from cs285.infrastructure import pytorch_util as ptu
+from cs285.infrastructure.utils import normalize
 from cs285.policies.base_policy import BasePolicy
 
 
@@ -142,8 +143,14 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
             dist = distributions.Categorical(logits=logits)
             return dist
 
-        mean = self.mean_net(observation)
-        dist = distributions.Normal(mean, torch.exp(self.logstd))
+        batch_mean = self.mean_net(observation)
+        batch_dim = batch_mean.shape[0]
+        scale_tril = torch.diag(torch.exp(self.logstd))
+        batch_scale_tril = scale_tril.repeat(batch_dim, 1, 1)
+        dist = distributions.MultivariateNormal(
+            batch_mean,
+            scale_tril=batch_scale_tril,
+        )
         return dist
 
 
@@ -153,9 +160,20 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
 
 class MLPPolicyPG(MLPPolicy):
     def __init__(self, ac_dim, ob_dim, n_layers, size, **kwargs):
-
         super().__init__(ac_dim, ob_dim, n_layers, size, **kwargs)
-        self.baseline_loss = nn.MSELoss()
+        if self.nn_baseline:
+            self.baseline = ptu.build_mlp(
+                input_size=self.ob_dim,
+                output_size=1,
+                n_layers=self.n_layers,
+                size=self.size,
+            )
+            self.baseline.to(ptu.device)
+            self.baseline_optimizer = optim.Adam(
+                self.baseline.parameters(),
+                self.learning_rate,
+            )
+            self.baseline_loss = nn.MSELoss()
 
     def update(self, observations, actions, advantages, q_values=None):
         observations = ptu.from_numpy(observations)
@@ -171,7 +189,6 @@ class MLPPolicyPG(MLPPolicy):
         # HINT3: don't forget that `optimizer.step()` MINIMIZES a loss
 
         action_dists = self(observations)
-
         log_probs = action_dists.log_prob(actions)
         loss = -torch.sum(log_probs * advantages)
 
@@ -184,24 +201,30 @@ class MLPPolicyPG(MLPPolicy):
         if self.nn_baseline:
             ## TODO: normalize the q_values to have a mean of zero and a standard deviation of one
             ## HINT: there is a `normalize` function in `infrastructure.utils`
-            targets = TODO
+            targets = normalize(q_values)
             targets = ptu.from_numpy(targets)
 
             ## TODO: use the `forward` method of `self.baseline` to get baseline predictions
-            baseline_predictions = TODO
+            baseline_predictions = self.baseline(observations)
+            baseline_predictions = torch.squeeze(baseline_predictions)
 
             ## avoid any subtle broadcasting bugs that can arise when dealing with arrays of shape
             ## [ N ] versus shape [ N x 1 ]
             ## HINT: you can use `squeeze` on torch tensors to remove dimensions of size 1
-            assert baseline_predictions.shape == targets.shape
+            assert baseline_predictions.shape == targets.shape, (
+                baseline_predictions.shape,
+                targets.shape,
+            )
 
             # TODO: compute the loss that should be optimized for training the baseline MLP (`self.baseline`)
             # HINT: use `F.mse_loss`
-            baseline_loss = TODO
+            baseline_loss = self.baseline_loss(baseline_predictions, targets)
 
             # TODO: optimize `baseline_loss` using `self.baseline_optimizer`
             # HINT: remember to `zero_grad` first
-            TODO
+            self.baseline_optimizer.zero_grad()
+            baseline_loss.backward()
+            self.baseline_optimizer.step()
 
         train_log = {
             "Training Loss": ptu.to_numpy(loss),
