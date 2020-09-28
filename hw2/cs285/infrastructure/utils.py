@@ -212,7 +212,7 @@ def add_noise(data_inp, noiseToSignal=0.01):
 
 
 def sample_trajectories(*args, **kwargs):
-    return sample_trajectories_sequential(*args, **kwargs)
+    return sample_trajectories_parallel(*args, **kwargs)
 
 
 def sample_trajectories_sequential(
@@ -290,7 +290,6 @@ def sample_trajectories_parallel(
         timesteps_this_batch += get_pathlength(path)
         if timesteps_this_batch >= min_timesteps_per_batch:
             # We have collected enough. Kill the workers.
-            result_queue.close()
             for proc in processes:
                 proc.kill()
             break
