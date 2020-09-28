@@ -211,8 +211,21 @@ def add_noise(data_inp, noiseToSignal=0.01):
 ############################################
 
 
-def sample_trajectories(*args, **kwargs):
-    return sample_trajectories_parallel(*args, **kwargs)
+def sample_trajectories(
+    env,
+    policy,
+    min_timesteps_per_batch,
+    max_path_length,
+    render=False,
+    render_mode=("rgb_array"),
+):
+    if min_timesteps_per_batch > 1000:
+        fn = sample_trajectories_parallel
+    else:
+        fn = sample_trajectories_sequential
+    return fn(
+        env, policy, min_timesteps_per_batch, max_path_length, render, render_mode
+    )
 
 
 def sample_trajectories_sequential(
