@@ -171,6 +171,7 @@ class MLPPolicyPG(MLPPolicy):
         # HINT3: don't forget that `optimizer.step()` MINIMIZES a loss
 
         action_dists = self(observations)
+
         log_probs = action_dists.log_prob(actions)
         loss = -torch.sum(log_probs * advantages)
 

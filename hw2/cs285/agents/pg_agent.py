@@ -144,6 +144,8 @@ class PGAgent(BaseAgent):
         discounted_rewards = rewards * discount_factors
 
         # We can write RTG(t) = sum_{t'=t}^T gamma^t' r_{t'} / r^t
-        partial_sums = np.flip(np.cumsum(discounted_rewards))
+        # Need cumsum from the right, i.e. flip -> cumsum -> flip
+        partial_sums = np.flip(np.cumsum(np.flip(discounted_rewards)))
         rewards_to_go = partial_sums / discount_factors
+
         return rewards_to_go
