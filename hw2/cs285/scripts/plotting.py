@@ -82,6 +82,7 @@ def main():
         files = [f for f in os.scandir(subdir.path)]
         assert len(files) == 1, files
         runs.append((files[0].path, subdir.name))
+    runs.sort()
 
     print(f"Found {len(runs)} runs:", runs)
 
