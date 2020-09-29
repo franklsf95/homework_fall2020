@@ -31,6 +31,7 @@ def plot_all(output_file, runs):
     ax = fig.add_subplot(111)
     plt.xlabel(args.xlabel)
     plt.ylabel(args.ylabel)
+    plt.grid()
 
     for path, run_name in runs:
         label = re.match(args.label_regex, run_name).group(1)
