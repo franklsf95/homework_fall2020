@@ -71,7 +71,7 @@ class DQNAgent(object):
             # `frame_history_len` observations using functionality from the replay buffer,
             # and then use those observations as input to your actor.
             recent_obs = self.replay_buffer.encode_recent_observation()
-            action = self.actor.get_action(recent_obs)[0]
+            action = self.actor.get_action(recent_obs)
 
         # take a step in the environment using the action from the policy
         # HINT1: remember that self.last_obs must always point to the newest/latest observation
@@ -84,7 +84,7 @@ class DQNAgent(object):
         # HINT2: one of the arguments you'll need to pass in is self.replay_buffer_idx from above
         self.replay_buffer.store_effect(self.replay_buffer_idx, action, reward, done)
 
-        # TODO if taking this step resulted in done, reset the env (and the latest observation)
+        # if taking this step resulted in done, reset the env (and the latest observation)
         if done:
             self.last_obs = self.env.reset()
 
