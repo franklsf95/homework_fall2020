@@ -115,7 +115,6 @@ def sample_trajectories(
     Collect rollouts using policy
     until we have collected min_timesteps_per_batch steps
     """
-    # TODO: get this from Piazza
     timesteps_this_batch = 0
     paths = []
     while timesteps_this_batch < min_timesteps_per_batch:
