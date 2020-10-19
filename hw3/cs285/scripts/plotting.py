@@ -19,8 +19,8 @@ parser.add_argument(
     default="(.*)_[A-Z]",
     help="regex to extract run labels, must contain exactly one group",
 )
-parser.add_argument("--avg_series", default="Eval_AverageReturn")
-parser.add_argument("--std_series", default="Eval_StdReturn")
+parser.add_argument("--avg_series", default="Train_AverageReturn")
+parser.add_argument("--std_series", default="Train_StdReturn")
 parser.add_argument("--markevery", default=10)
 parser.add_argument("--xlabel", default="Steps")
 parser.add_argument("--ylabel", default="Return")
