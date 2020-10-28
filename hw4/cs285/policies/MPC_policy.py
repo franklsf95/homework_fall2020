@@ -4,15 +4,7 @@ from .base_policy import BasePolicy
 
 
 class MPCPolicy(BasePolicy):
-
-    def __init__(self,
-                 env,
-                 ac_dim,
-                 dyn_models,
-                 horizon,
-                 N,
-                 **kwargs
-                 ):
+    def __init__(self, env, ac_dim, dyn_models, horizon, N, **kwargs):
         super().__init__(**kwargs)
 
         # init vars
@@ -44,18 +36,21 @@ class MPCPolicy(BasePolicy):
 
         # sample random actions (N x horizon)
         candidate_action_sequences = self.sample_action_sequences(
-            num_sequences=self.N, horizon=self.horizon)
+            num_sequences=self.N, horizon=self.horizon
+        )
 
         # for each model in ensemble:
         predicted_sum_of_rewards_per_model = []
         for model in self.dyn_models:
             sum_of_rewards = self.calculate_sum_of_rewards(
-                obs, candidate_action_sequences, model)
+                obs, candidate_action_sequences, model
+            )
             predicted_sum_of_rewards_per_model.append(sum_of_rewards)
 
         # calculate mean_across_ensembles(predicted rewards)
         predicted_rewards = np.mean(
-            predicted_sum_of_rewards_per_model, axis=0)  # [ens, N] --> N
+            predicted_sum_of_rewards_per_model, axis=0
+        )  # [ens, N] --> N
 
         # pick the action sequence and return the 1st element of that sequence
         best_action_sequence = None  # TODO (Q2)
