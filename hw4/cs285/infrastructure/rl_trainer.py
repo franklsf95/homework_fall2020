@@ -368,7 +368,7 @@ class RL_Trainer(object):
         # plot the predictions
         self.fig.clf()
         for i in range(ob_dim):
-            plt.subplot(ob_dim / 2, 2, i + 1)
+            plt.subplot(ob_dim // 2, 2, i + 1)
             plt.plot(true_states[:, i], "g")
             plt.plot(pred_states[:, i], "r")
         self.fig.suptitle("MPE: " + str(mpe))
