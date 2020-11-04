@@ -88,7 +88,7 @@ class FFModel(nn.Module, BaseModel):
         # Hint: as described in the PDF, the output of the network is the
         # *normalized change* in state, i.e. normalized(s_t+1 - s_t).
         delta_pred_normalized = self.delta_network(concatenated_input)
-        delta_pred_unnormalized = unnormalize(delta_pred_normalized, obs_mean, obs_std)
+        delta_pred_unnormalized = unnormalize(delta_pred_normalized, delta_mean, delta_std)
         next_obs_pred = obs_unnormalized + delta_pred_unnormalized
         return next_obs_pred, delta_pred_normalized
 
