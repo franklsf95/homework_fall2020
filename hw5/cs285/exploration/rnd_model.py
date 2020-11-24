@@ -64,7 +64,7 @@ class RNDModel(nn.Module, BaseExplorationModel):
         # HINT: Remember to detach the output of self.f!
         f_out = self.f(ob_no).detach()
         f_hat_out = self.f_hat(ob_no)
-        error = nn.functional.mse_loss(f_out, f_hat_out, reduction="none").mean(dim=1)
+        error = torch.norm(f_out - f_hat_out, dim=1)
         return error
 
     def forward_np(self, ob_no):
